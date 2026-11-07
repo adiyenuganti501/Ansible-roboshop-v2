@@ -3,9 +3,9 @@
   connection: local
   vars:
     # ansible-playbook roboshop.yaml -e "instances=['mongodb', 'redis']"
-    # ansible-playbook roboshop.yaml -e "action=delete"
+    # ansible-playbook roboshop.yaml -e "what_to_do=delete"
     instances: ["mongodb", "rabbitmq", "catalogue", "user", "cart", "shipping", "payment", "frontend"]
-    action: create
+    what_to_do: create
     domain_name: khiranya.online
     ami_id: ami-0055977a6e828a4f4
   tasks:
@@ -19,7 +19,7 @@
       #- "roboshop-{{ item }}"
       region: us-east-1
     loop: "{{ instances }}"
-    when: action == "create"
+    when: what_to_do == "create"
     register: ec2_output
 
   # - name: print ec2 creation output
@@ -36,7 +36,7 @@
       value: "{{ item.instances[0].private_ip_address }}"
       overwrite: true
     loop: "{{ ec2_output.results }}"
-    when: action == "create"
+    when: what_to_do == "create"
 
   - name: create R53 record for frontend
     amazon.aws.route53:
@@ -48,7 +48,7 @@
       value: "{{ item.instances[0].public_ip_address }}"
       overwrite: true
     loop: "{{ ec2_output.results }}"
-    when: action == "create" and item.item == "frontend"
+    when: what_to_do == "create" and item.item == "frontend"
 
   - name: delete R53 records
     amazon.aws.route53:
@@ -58,7 +58,7 @@
       ttl: 1
       type: A
     loop: "{{ instances }}"
-    when: action == "delete"
+    when: what_to_do == "delete"
 
   - name: delete R53 record for frontend
     amazon.aws.route53:
@@ -67,7 +67,7 @@
       record: "{{ domain_name }}"
       ttl: 1
       type: A
-    when: action == "delete" 
+    when: what_to_do == "delete" 
 
   - name: delete ec2 instances
     amazon.aws.ec2_instance:
@@ -76,4 +76,4 @@
       region: us-east-1
       wait: false
     loop: "{{ instances }}"
-    when: action == "delete"
+    when: what_to_do == "delete"
